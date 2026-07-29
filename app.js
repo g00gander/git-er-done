@@ -157,6 +157,15 @@
   let sortBy = "dueDate";
   let sortDir = "asc";
 
+  const COMPLETED_GRANULARITY_KEY = "taskManager.completedGranularity";
+  let completedGranularity = (function () {
+    try {
+      return localStorage.getItem(COMPLETED_GRANULARITY_KEY) || "week";
+    } catch (e) {
+      return "week";
+    }
+  })();
+
   function populateCategoryFilter() {
     const current = els.categoryFilter.value;
     const cats = knownValues("category");
@@ -246,6 +255,86 @@
     return `<div class="stat-graph-panel"><h3>${h.escapeHtml(title)}</h3>${body}</div>`;
   }
 
+  function isoDate(d) {
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  function addDays(d, n) {
+    const r = new Date(d);
+    r.setDate(r.getDate() + n);
+    return r;
+  }
+
+  function mondayOf(d) {
+    const day = d.getDay();
+    const diff = (day === 0 ? -6 : 1) - day;
+    return addDays(d, diff);
+  }
+
+  function completedBuckets(granularity) {
+    const completedDates = data.tasks.filter((t) => t.dateCompleted).map((t) => t.dateCompleted);
+    const today = new Date(TM.helpers.todayIso() + "T00:00:00");
+    const buckets = [];
+
+    if (granularity === "day") {
+      for (let i = 13; i >= 0; i--) {
+        const d = addDays(today, -i);
+        const key = isoDate(d);
+        buckets.push({ label: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }), value: completedDates.filter((cd) => cd === key).length });
+      }
+    } else if (granularity === "week") {
+      const thisMonday = mondayOf(today);
+      for (let i = 7; i >= 0; i--) {
+        const start = addDays(thisMonday, -7 * i);
+        const end = addDays(start, 6);
+        const startKey = isoDate(start);
+        const endKey = isoDate(end);
+        buckets.push({ label: start.toLocaleDateString(undefined, { month: "short", day: "numeric" }), value: completedDates.filter((cd) => cd >= startKey && cd <= endKey).length });
+      }
+    } else if (granularity === "month") {
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        const prefix = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        const label = d.toLocaleDateString(undefined, d.getFullYear() === today.getFullYear() ? { month: "short" } : { month: "short", year: "2-digit" });
+        buckets.push({ label, value: completedDates.filter((cd) => cd.startsWith(prefix)).length });
+      }
+    } else {
+      for (let i = 4; i >= 0; i--) {
+        const y = today.getFullYear() - i;
+        buckets.push({ label: String(y), value: completedDates.filter((cd) => cd.startsWith(String(y))).length });
+      }
+    }
+    return buckets;
+  }
+
+  function completedPanel() {
+    const h = TM.helpers;
+    const rows = completedBuckets(completedGranularity);
+    const max = Math.max(1, ...rows.map((r) => r.value));
+    const toggleHtml = ["day", "week", "month", "year"]
+      .map(
+        (g) =>
+          `<button type="button" class="btn-ghost btn-tiny${g === completedGranularity ? " active" : ""}" data-granularity="${g}">${g[0].toUpperCase()}${g.slice(1)}</button>`
+      )
+      .join("");
+    const body = rows.some((r) => r.value > 0)
+      ? rows
+          .map((r) => {
+            const pct = Math.round((r.value / max) * 100);
+            const fillCls = r.value > 0 ? "bar-fill bar-completed" : "bar-fill bar-fill-zero";
+            return `
+        <div class="bar-row">
+          <div class="bar-label">${h.escapeHtml(r.label)}</div>
+          <div class="bar-track"><div class="${fillCls}" style="width:${pct}%"></div></div>
+          <div class="bar-count">${r.value}</div>
+        </div>`;
+          })
+          .join("")
+      : `<p class="empty-text">No data yet.</p>`;
+    return `<div class="stat-graph-panel"><div class="stat-graph-header"><h3>Completed</h3><div class="granularity-toggle">${toggleHtml}</div></div>${body}</div>`;
+  }
+
   function renderStatGraphs() {
     const tasks = data.tasks;
     const total = tasks.length;
@@ -280,8 +369,19 @@
       barGraphPanel("By Status", statusRows, total),
       barGraphPanel("By Priority", priorityRows, total),
       barGraphPanel("By Category", categoryRows, total),
+      completedPanel(),
     ].join("");
   }
+
+  els.statGraphs.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-granularity]");
+    if (!btn) return;
+    completedGranularity = btn.dataset.granularity;
+    try {
+      localStorage.setItem(COMPLETED_GRANULARITY_KEY, completedGranularity);
+    } catch (err) {}
+    renderStatGraphs();
+  });
 
   function renderTable() {
     const rows = visibleTasks();
