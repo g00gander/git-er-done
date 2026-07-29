@@ -119,7 +119,7 @@
 
   const COLUMNS = [
     { key: "id", label: "Task ID", type: "computed", compute: (row) => row.id, format: (v, row) => (isOverdue(row) ? `⚠ ${v}` : v) },
-    { key: "project", label: "Project", type: "text", placeholder: "e.g. Acme Corp/Onboarding" },
+    { key: "project", label: "Project", type: "textarea", placeholder: "e.g. Acme Corp/Onboarding" },
     { key: "task", label: "Task", type: "textarea", required: true, placeholder: "What needs to happen?" },
     { key: "assignedTo", label: "Assigned To", type: "text", datalist: () => knownValues("assignedTo") },
     { key: "status", label: "Status", type: "select", options: STATUS_OPTIONS },
