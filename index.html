@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Git 'er Done!</title>
+<script>
+  (function () {
+    try {
+      var saved = localStorage.getItem("taskManager.theme") || "auto";
+      var resolved = saved;
+      if (saved === "auto") {
+        var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        resolved = prefersDark ? "mono" : "paper";
+      }
+      document.documentElement.setAttribute("data-theme", resolved);
+
+      var savedFontSize = localStorage.getItem("taskManager.fontSize") || "normal";
+      document.documentElement.setAttribute("data-fontsize", savedFontSize);
+    } catch (e) {}
+  })();
+</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="brand">
+      <img src="assets/mascot.png" alt="" class="mascot-image" id="mascotImage">
+      <div>
+        <h1>Git 'er Done!</h1>
+        <p class="field-hint">Manage tasks by project, priority, assignee, and due date.</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <label class="unit-toggle">
+        Font size:
+        <select id="fontSizeSelect">
+          <option value="smaller">Smaller</option>
+          <option value="small">Small</option>
+          <option value="normal">Normal</option>
+          <option value="large">Large</option>
+          <option value="larger">Larger</option>
+        </select>
+      </label>
+      <span class="header-divider" aria-hidden="true"></span>
+      <label class="unit-toggle">
+        Theme:
+        <select id="themeSelect">
+          <option value="auto">Auto (match system)</option>
+          <option value="midnight">Midnight</option>
+          <option value="aurora">Aurora</option>
+          <option value="ember">Ember</option>
+          <option value="forest">Forest</option>
+          <option value="solstice">Solstice</option>
+          <option value="paper">Paper</option>
+          <option value="mono">Mono</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <div id="statStrip" class="stat-strip"></div>
+
+  <div id="statGraphs" class="stat-graphs"></div>
+
+  <div class="task-toolbar">
+    <button type="button" id="addTaskBtn" class="btn-primary">+ Add Task</button>
+    <span class="header-divider" aria-hidden="true"></span>
+    <div class="filter-group">
+      <label for="searchInput">Search:</label>
+      <input type="text" id="searchInput" class="search-input" placeholder="Search project, task, assignee, notes…">
+    </div>
+    <span class="header-divider" aria-hidden="true"></span>
+    <div class="filter-group">
+      <label for="statusFilter">Status:</label>
+      <select id="statusFilter">
+        <option value="all">All Statuses</option>
+        <option value="not_started">Not Started</option>
+        <option value="in_progress">In Progress</option>
+        <option value="under_review">Under Review</option>
+        <option value="complete">Complete</option>
+        <option value="overdue">Overdue</option>
+        <option value="blocked">Blocked</option>
+        <option value="recurring">Recurring</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="priorityFilter">Priority:</label>
+      <select id="priorityFilter">
+        <option value="all">All Priorities</option>
+        <option value="low">Low</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="categoryFilter">Category:</label>
+      <select id="categoryFilter">
+        <option value="all">All Categories</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="blockedFilter">Blocked:</label>
+      <select id="blockedFilter">
+        <option value="all">All</option>
+        <option value="true">Blocked</option>
+        <option value="false">Not Blocked</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label class="checkbox-label" for="hideCompletedToggle">
+        <input type="checkbox" id="hideCompletedToggle">
+        Hide Completed
+      </label>
+    </div>
+    <span class="spacer"></span>
+    <button type="button" id="clearFiltersBtn" class="btn-ghost">Clear Filters</button>
+  </div>
+
+  <div id="taskTable"></div>
+
+</div>
+
+<script src="storage.js"></script>
+<script src="helpers.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
